@@ -1,0 +1,544 @@
+{
+  "name": "Multiple-Choice-Generator: adaptives Lernen",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Erstelle genau EINE Multiple-Choice-Frage.\n\nThema: {{ $json.thema }}\nSchwierigkeitsgrad: {{ $json.schwierigkeit }}\n{{ $json.bisher.length ? 'Diese Fragen wurden bereits gestellt. Stelle keine davon erneut und keine sehr ähnliche:\\n- ' + $json.bisher.join('\\n- ') : '' }}\n\nRegeln:\n- genau vier Optionen A, B, C, D, keine doppelt\n- genau eine Option ist richtig\n- \"richtige_antwort\" enthält NUR den Buchstaben A, B, C oder D\n\nAntworte AUSSCHLIESSLICH mit validem JSON in diesem Format, ohne zusätzlichen Text:\n{\n  \"frage\": \"...\",\n  \"optionen\": { \"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\" },\n  \"richtige_antwort\": \"B\",\n  \"erklaerung\": \"...\"\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1008,
+        464
+      ],
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        784
+      ],
+      "name": "Groq Chat Model1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"frage\": \"Welche Farbe hat der Himmel bei klarem Wetter?\",\n  \"optionen\": { \"A\": \"Grün\", \"B\": \"Blau\", \"C\": \"Rot\", \"D\": \"Gelb\" },\n  \"richtige_antwort\": \"B\",\n  \"erklaerung\": \"Kurzwelliges blaues Licht wird stärker gestreut.\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -864,
+        688
+      ],
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "formTitle": "Multiple-Choice-Fragen",
+        "formDescription": "Was möchtest Du heute Lernen?",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Anzahl Fragen",
+              "fieldType": "number",
+              "defaultValue": "3"
+            },
+            {
+              "fieldLabel": "Thema",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Schwierigkeit",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Leicht"
+                  },
+                  {
+                    "option": "Mittel"
+                  },
+                  {
+                    "option": "Schwer"
+                  },
+                  {
+                    "option": "Adaptiv - Start bei Leicht, danach ±1 je Antwort"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        -1552,
+        480
+      ],
+      "name": "Eingabe"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7790dbf8-df29-45e8-acf3-d9817bba179e",
+              "leftValue": "={{ $json.Antwort[0] }}",
+              "rightValue": "={{ $('AI Agent').last().json.output.optionen[$('AI Agent').last().json.output.richtige_antwort] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -192,
+        464
+      ],
+      "name": "Antwort i.o./n.i.O."
+    },
+    {
+      "parameters": {
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Richtige Antwort!",
+              "fieldType": "textarea",
+              "fieldName": "Ergebnis",
+              "defaultValue": "=Gut gemacht!\n\nErklärung: {{ $('AI Agent').last().json.output.erklaerung }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        96,
+        448
+      ],
+      "name": "Antwort i.O.",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "={{ $json.output.frage }}",
+              "fieldType": "checkbox",
+              "fieldName": "Antwort",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "={{ $json.output.optionen.A }}"
+                  },
+                  {
+                    "option": "={{ $json.output.optionen.B }}"
+                  },
+                  {
+                    "option": "={{ $json.output.optionen.C }}"
+                  },
+                  {
+                    "option": "={{ $json.output.optionen.D }}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        -400,
+        464
+      ],
+      "name": "MC Fragen"
+    },
+    {
+      "parameters": {
+        "content": "Formular Eingabe",
+        "height": 816,
+        "width": 576
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1632,
+        144
+      ],
+      "typeVersion": 1,
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "KI Agent",
+        "height": 816,
+        "width": 272,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1040,
+        144
+      ],
+      "typeVersion": 1,
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Auswertung",
+        "height": 816,
+        "width": 704,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -752,
+        144
+      ],
+      "typeVersion": 1,
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Ergebnisse",
+        "height": 816,
+        "width": 576,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -32,
+        144
+      ],
+      "typeVersion": 1,
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b6b41964-69d0-4e07-bb0f-b8e346a567f4",
+              "leftValue": "={{ $json.punkte }}",
+              "rightValue": "={{ $json.anzahl / 2 }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        80,
+        176
+      ],
+      "name": "Mehr als 50%"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Bestanden!",
+        "completionMessage": "=Glückwunsch, Du hast Bestanden!\n\nRichtig: {{ $json.punkte }} von {{ $json.anzahl }}\n{{ $json.adaptiv ? 'Erreichte Stufe: ' + ['Leicht','Mittel','Schwer'][$json.stufe - 1] \n\n: 'Stufe: ' + ['Leicht','Mittel','Schwer'][$json.stufe - 1] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        304,
+        160
+      ],
+      "name": "Bestanden!",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Spielstand: beim ersten Durchlauf anlegen, danach aus der letzten Runde übernehmen\nconst STUFEN = ['Leicht', 'Mittel', 'Schwer'];\nlet s;\n\nif ($runIndex === 0) {\n  const e = $('Eingabe').first().json;\n  const wahl = String(e.Schwierigkeit || 'Adaptiv');\n  const adaptiv = wahl.startsWith('Adaptiv');\n  const fest = STUFEN.findIndex(st => wahl.startsWith(st)) + 1;   // 1–3, oder 0 wenn unbekannt\n  s = {\n    anzahl: Number(e['Anzahl Fragen']) || 5,\n    thema: String(e.Thema || '').trim() || 'Allgemeinwissen',     // leeres Thema abfangen\n    adaptiv,\n    stufe: adaptiv ? 1 : (fest || 2),\n    nr: 1,\n    punkte: 0,\n    bisher: []\n  };\n} else {\n  s = { ...$('Auswerten').last().json };\n}\n\ns.schwierigkeit = STUFEN[s.stufe - 1];\nreturn [{ json: s }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1392,
+        480
+      ],
+      "name": "Stand"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a9f78e18-3279-48cb-a2d2-02c0d9d08f5c",
+              "leftValue": "={{ $json.nr }}",
+              "rightValue": "={{ $json.anzahl }}",
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1232,
+        480
+      ],
+      "name": "Noch Fragen?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Spielstand nach jeder Antwort fortschreiben\nconst s = $('Stand').last().json;                         // Stand vor dieser Frage\nconst q = $('AI Agent').last().json.output;               // die gerade gestellte Frage\nconst gewaehlt = ($('MC Fragen').last().json.Antwort || [])[0];\nconst richtig = gewaehlt === q.optionen[q.richtige_antwort];\n\nconst neu = { ...s };\nneu.punkte = s.punkte + (richtig ? 1 : 0);\n\n// nur im Modus Adaptiv: Stufe ±1, begrenzt auf 1 (Leicht) bis 3 (Schwer)\nif (s.adaptiv) {\n  neu.stufe = Math.min(3, Math.max(1, s.stufe + (richtig ? 1 : -1)));\n}\n\nneu.nr = s.nr + 1;                        // nächste Frage\nneu.bisher = [...s.bisher, q.frage];      // gegen Wiederholungen\nneu.letzte = richtig ? 'richtig' : 'falsch';\n\nreturn [{ json: neu }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        736
+      ],
+      "name": "Auswerten"
+    },
+    {
+      "parameters": {
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Falsche Antwort!",
+              "fieldType": "textarea",
+              "fieldName": "Ergebnis",
+              "defaultValue": "=Leider falsch!\n\nDie richtige Antwort: {{ $('AI Agent').last().json.output.richtige_antwort }}\n\nKurze Erklärung: {{ $('AI Agent').last().json.output.erklaerung }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        96,
+        608
+      ],
+      "name": "Antwort n.i.O."
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Leider nicht bestanden!",
+        "completionMessage": "=Leider nicht bestanden. \nZum Bestehen brauchst Du mehr als 50%.\n\nRichtig: {{ $json.punkte }} von {{ $json.anzahl }}\n{{ $json.adaptiv ? 'Erreichte Stufe: ' + ['Leicht','Mittel','Schwer'][$json.stufe - 1]\n: 'Stufe: ' + ['Leicht','Mittel','Schwer'][$json.stufe - 1] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        304,
+        352
+      ],
+      "name": "Nicht Bestanden!"
+    }
+  ],
+  "connections": {
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "MC Fragen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eingabe": {
+      "main": [
+        [
+          {
+            "node": "Stand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Antwort i.o./n.i.O.": {
+      "main": [
+        [
+          {
+            "node": "Antwort i.O.",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Antwort n.i.O.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Antwort i.O.": {
+      "main": [
+        [
+          {
+            "node": "Auswerten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MC Fragen": {
+      "main": [
+        [
+          {
+            "node": "Antwort i.o./n.i.O.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mehr als 50%": {
+      "main": [
+        [
+          {
+            "node": "Bestanden!",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nicht Bestanden!",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stand": {
+      "main": [
+        [
+          {
+            "node": "Noch Fragen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Noch Fragen?": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mehr als 50%",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Antwort n.i.O.": {
+      "main": [
+        [
+          {
+            "node": "Auswerten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auswerten": {
+      "main": [
+        [
+          {
+            "node": "Stand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "pinData": {}
+}
