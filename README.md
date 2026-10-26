@@ -58,9 +58,7 @@ flowchart LR
 
 ## Screenshots
 
-<!-- Screenshots hier per Drag and Drop einfügen, z. B. Workflow in n8n, Eingabeformular, Ergebnis -->
-
-Screenshots folgen.
+![Workflow in n8n](workflow.png)
 
 ## Herausforderungen
 
